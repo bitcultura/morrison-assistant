@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const workflow = JSON.parse(fs.readFileSync('n8n/MORRISON-health-readonly.json', 'utf8'));
-assert.match(workflow.name, /^MORRISON(?:\\b|[\\s_-])/i, 'El workflow debe pertenecer a MORRISON');
+assert.match(workflow.name, /^MORRISON(?:\b|[\s_-])/i, 'El workflow debe pertenecer a MORRISON');
 assert.equal(workflow.active, false, 'El archivo no puede activar el workflow');
 assert.ok(Array.isArray(workflow.nodes) && workflow.nodes.length===2, 'Exactamente 2 nodos');
 const nodeTypes = workflow.nodes.map(n => n.type);
