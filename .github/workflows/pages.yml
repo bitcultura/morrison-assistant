@@ -40,6 +40,8 @@ jobs:
           PY
       - name: Validar flujo MORRISON de solo lectura
         run: node tests/n8n-health.mjs
+      - name: Comprobar gateway Railway y protección de datos
+        run: node tests/remote-health.mjs
       - name: Instalar Chromium para pruebas de interfaz
         run: |
           npm install --no-save playwright@1.56.1
