@@ -17,6 +17,46 @@ El servidor publica ambos alcances en `scopes_supported`, pero en su `oauthChall
 
 **Solución recomendada:** mantener `read:workflows` para lecturas y enviar un desafío **HTTP 403** con `WWW-Authenticate: Bearer error="insufficient_scope", scope="read:workflows write:workflows", resource_metadata="https://bitcultura-n8n-mcp-production.up.railway.app/.well-known/oauth-protected-resource"` exclusivamente en las solicitudes a herramientas de escritura sin permiso. Los clientes MCP compatibles pueden ampliar la autorización en ese momento, sin exigir escritura durante la conexión inicial. Ver la guía oficial de MCP de `scopeChallenge` / `403 insufficient_scope`.
 
+### Cambio concreto a aplicar en Railway (pendiente)
+
+No es necesario modificar el desafío inicial de lectura. En el `index.tsx` del servicio `bitcultura-n8n-mcp`, reemplazar **solo estos dos bloques**, conservando la validación JWT y `safeMorrisonDraft`.
+
+En `tools/list`, mostrar las herramientas de edición con su esquema OAuth propio, incluso si el token actual es de solo lectura:
+
+```ts
+const visibleTools = tools.filter((t:any) =>
+  READ_TOOLS.has(t.name) || WRITE_TOOLS.has(t.name)
+).map((t:any) => ({
+  ...t,
+  securitySchemes: [{
+    type: "oauth2",
+    scopes: WRITE_TOOLS.has(t.name)
+      ? ["read:workflows", "write:workflows"]
+      : ["read:workflows"]
+  }]
+}));
+return json({jsonrpc:"2.0",id,result:{tools:visibleTools}});
+```
+
+En `tools/call`, **antes** de invocar `callTool`, responder con un desafío de privilegio cuando falte el scope de escritura:
+
+```ts
+if (WRITE_TOOLS.has(name) && !writeAuthenticated) {
+  return json(
+    {error:"insufficient_scope",error_description:"Se requiere el permiso MORRISON write:workflows"},
+    403,
+    {"www-authenticate":
+      'Bearer error="insufficient_scope", scope="read:workflows write:workflows", resource_metadata="' +
+      oauthMetadataUrl + '"'}
+  );
+}
+if (!READ_TOOLS.has(name) && !WRITE_TOOLS.has(name)) {
+  return json({jsonrpc:"2.0",id,error:{code:-32601,message:"Tool not found"}});
+}
+```
+
+**Comprobar que el bloque de `tools/call` sigue dentro de la verificación de JWT de lectura.** La función `callTool` ya ejecuta `safeMorrisonDraft` para los dos nombres de escritura. Tras el despliegue, una llamada con token read-only debe devolver HTTP 403 y un token con ambos scopes debe ver las herramientas de escritura. No incluir tokens en logs ni capturas.
+
 **Alternativa operativa para un MCP personal:** anunciar ambos scopes en el desafío inicial y volver a autorizar el plugin ChatGPT. Solicita más permisos de los necesarios al conectarse, por lo que es menos recomendable; la pertenencia al rol Auth0 debe seguir comprobada.
 
 ## Comprobaciones antes de cambiar producción
