@@ -1,5 +1,8 @@
 # MORRISON — OAuth y permisos del MCP n8n
 
+> **Actualización comprobada — 15 octubre 2026:** autorización de escritura MORRISON resuelta mediante verificación conjunta del JWT `scope=read:workflows` y los permisos RBAC `permissions: [read:workflows, write:workflows]` de Auth0. Las dos cuentas del complemento devolvieron `write_tool_authorized=true`. Se creó mediante MCP el workflow inactivo MORRISON «Capacidades públicas» (ID `pyA9VhZQ1yer67iC`) y se editó exitosamente su respuesta fija a `version:2`. Verificación posterior: 16 workflows en n8n, 2 MORRISON inactivos, cuatro servicios Railway en línea. **No** se activó ningún workflow ni se implementó sincronización automática de la PWA. El resto del documento registra etapas y decisiones previas, algunas ya superadas.
+
+
 **15-10-2026 — estado verificado:** la API Auth0 tiene los permisos `read:workflows` y `write:workflows`; el usuario creó y asignó el rol `MORRISON MCP Editor` y habilitó RBAC. El MCP Railway está desplegado; las cuatro herramientas de lectura funcionan y la corrección de autorización por herramienta (OAuth step-up) está **desplegada y verificada en código vivo**. El token de ChatGPT **no está demostrado que incluya** `write:workflows` y el catálogo actual del plugin solo muestra las cuatro herramientas de lectura.
 
 ## Arquitectura y principio de mínimo privilegio
