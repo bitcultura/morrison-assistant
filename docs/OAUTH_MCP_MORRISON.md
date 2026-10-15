@@ -1,6 +1,6 @@
 # MORRISON — OAuth y permisos del MCP n8n
 
-**15-10-2026 — estado verificado:** la API Auth0 tiene los permisos `read:workflows` y `write:workflows`; el usuario creó y asignó el rol `MORRISON MCP Editor` y habilitó RBAC. El MCP Railway está desplegado y sus cuatro herramientas de lectura funcionan; el token de ChatGPT **no está demostrado que incluya** `write:workflows`.
+**15-10-2026 — estado verificado:** la API Auth0 tiene los permisos `read:workflows` y `write:workflows`; el usuario creó y asignó el rol `MORRISON MCP Editor` y habilitó RBAC. El MCP Railway está desplegado; las cuatro herramientas de lectura funcionan y la corrección de autorización por herramienta (OAuth step-up) está **desplegada y verificada en código vivo**. El token de ChatGPT **no está demostrado que incluya** `write:workflows` y el catálogo actual del plugin solo muestra las cuatro herramientas de lectura.
 
 ## Arquitectura y principio de mínimo privilegio
 
@@ -11,15 +11,15 @@
 - `n8n_activate_workflow` y `n8n_deactivate_workflow` **no** se exponen al cliente. No habilitar ejecución ni activación durante la primera prueba.
 - Los workflows de BitCultura permanecen fuera de alcance.
 
-## Bloqueo observado en el código desplegado
+## Bloqueo de permisos identificado y corrección aplicada
 
-El servidor publica ambos alcances en `scopes_supported`, pero en su `oauthChallenge()` todavía anuncia únicamente `read:workflows`. Además, ante una llamada de escritura sin el alcance, devuelve un error JSON-RPC `insufficient_scope` con HTTP 200, no un desafío HTTP 403 que permita al cliente volver a autorizar de forma estándar.
+**Histórico (resuelto el 15-10-2026):** el servidor publicaba ambos scopes en `scopes_supported` pero el desafío inicial solo anunciaba lectura y una llamada de escritura fallaba con error JSON-RPC HTTP 200. Ya se desplegó la mejora: `tools/list` anuncia herramientas read/write con sus scopes, y `tools/call` responde HTTP 403 + `WWW-Authenticate` solo para escritura si falta `write:workflows`. El reto inicial continúa requiriendo únicamente lectura.
 
-**Solución recomendada:** mantener `read:workflows` para lecturas y enviar un desafío **HTTP 403** con `WWW-Authenticate: Bearer error="insufficient_scope", scope="read:workflows write:workflows", resource_metadata="https://bitcultura-n8n-mcp-production.up.railway.app/.well-known/oauth-protected-resource"` exclusivamente en las solicitudes a herramientas de escritura sin permiso. Los clientes MCP compatibles pueden ampliar la autorización en ese momento, sin exigir escritura durante la conexión inicial. Ver la guía oficial de MCP de `scopeChallenge` / `403 insufficient_scope`.
+**Implementado en Railway:** mantener `read:workflows` para lecturas y enviar un desafío **HTTP 403** con `WWW-Authenticate: Bearer error="insufficient_scope", scope="read:workflows write:workflows", resource_metadata="https://bitcultura-n8n-mcp-production.up.railway.app/.well-known/oauth-protected-resource"` exclusivamente en las solicitudes a herramientas de escritura sin permiso. Los clientes MCP compatibles pueden ampliar la autorización en ese momento, sin exigir escritura durante la conexión inicial. Ver la guía oficial de MCP de `scopeChallenge` / `403 insufficient_scope`.
 
-### Cambio concreto a aplicar en Railway (pendiente)
+### Cambio concreto ya desplegado en Railway
 
-No es necesario modificar el desafío inicial de lectura. En el `index.tsx` del servicio `bitcultura-n8n-mcp`, reemplazar **solo estos dos bloques**, conservando la validación JWT y `safeMorrisonDraft`.
+No fue necesario modificar el desafío inicial de lectura. Se actualizaron **únicamente los dos bloques** indicados en el `index.tsx` del servicio `bitcultura-n8n-mcp`, conservando la validación JWT y `safeMorrisonDraft`. Esta sección conserva el código aplicado como registro para futuras auditorías.
 
 En `tools/list`, mostrar las herramientas de edición con su esquema OAuth propio, incluso si el token actual es de solo lectura:
 
@@ -64,11 +64,11 @@ if (!READ_TOOLS.has(name) && !WRITE_TOOLS.has(name)) {
 1. Confirmar en Auth0 **Applications → APIs → [API MCP] → Settings**: RBAC y Add Permissions in the Access Token activados (usuario confirmó ambos).
 2. Confirmar **User Management → Roles → MORRISON MCP Editor**: contiene ambos permisos y el usuario correcto está asignado (usuario confirmó).
 3. Comprobar que el token de una **nueva** autorización solicita y obtiene `write:workflows` en el claim `scope` (no basta con `permissions`; el MCP actual lee `payload.scope`).
-4. Modificar el código de MCP **solo después de un respaldo**, conservando el allowlist y validación. Revisar cambios y desplegar con Railway.
+4. [x] Modificar el código MCP conservando allowlist y validación. Desplegado mediante staging en Railway el 15-10-2026; verificada disponibilidad posterior de los cuatro métodos de lectura.
 5. Repetir las cuatro herramientas de lectura del MCP.
 6. Mostrar que sin `write:workflows` las herramientas de escritura siguen bloqueadas.
-7. Con token autorizado, intentar exclusivamente `n8n_create_workflow` para el borrador `MORRISON v1 — Salud pública mínima / solo lectura`, sin activarlo.
-8. Comprobar que aparece en n8n, está **inactivo** y sus nodos coinciden con `n8n/MORRISON-health-readonly.json`. **Nunca usar un workflow BitCultura como prueba de escritura**.
+7. [x] El borrador `MORRISON v1 — Salud pública mínima / solo lectura` ya fue importado manualmente y está inactivo en n8n. La prueba futura de escritura por MCP debe utilizar otro borrador de laboratorio; no duplicar el workflow.
+8. [x] Verificado por el plugin el 15-10-2026: workflow ID `nCX68jGOGH5MBz3j`, inactivo, dos nodos esperados, ninguno con credenciales. La prueba HTTP de webhook permanece pendiente hasta que el workflow escuche en test o se active como producción. **Nunca usar un workflow BitCultura como prueba de escritura**.
 
 ## Qué NO hacer
 
@@ -84,3 +84,7 @@ if (!READ_TOOLS.has(name) && !WRITE_TOOLS.has(name)) {
 - [Auth0 — scopes de API](https://auth0.com/docs/get-started/apis/scopes/api-scopes)
 - [Archivo del workflow de salud](../n8n/MORRISON-health-readonly.json)
 - [Panel n8n](https://n8n-production-d5cb.up.railway.app/)
+
+## Prueba HTTP pendiente
+
+La respuesta `404 The requested webhook "morrison-v1-health" is not registered` es esperable mientras el webhook de prueba no esté escuchando o el workflow no se encuentre activo para producción. La consulta API confirma que el workflow piloto sigue inactivo, pero sin un editor interactivo conectado o herramienta de activación autorizada **no es posible encenderlo desde este chat**. No atribuir este 404 a una falla de Railway.
