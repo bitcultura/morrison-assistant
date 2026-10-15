@@ -1,0 +1,70 @@
+{
+  "name": "MORRISON v1 — Salud pública mínima / solo lectura",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "morrison-v1-health",
+        "responseMode": "responseNode",
+        "options": {},
+        "httpMethod": "GET"
+      },
+      "id": "de560b2b-7ff7-4f39-b1f0-081a6fe12311",
+      "name": "MORRISON GET health",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "morrison-v1-health"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"system\":\"MORRISON\",\"status\":\"ready\",\"readonly\":true}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e23a8298-4f68-48d5-a5db-889d2a3a0afd",
+      "name": "Responder listo, sin datos internos",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "MORRISON GET health": {
+      "main": [
+        [
+          {
+            "node": "Responder listo, sin datos internos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
