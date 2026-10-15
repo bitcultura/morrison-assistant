@@ -21,6 +21,7 @@ jobs:
       - name: Validar JavaScript, HTML y manifiesto antes de publicar
         run: |
           node --check morrison-ops.js
+          node --check morrison-connect.js
           node --check sw.js
           python3 - <<'PY'
           import json,re,subprocess,pathlib
@@ -47,6 +48,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/morrison-http.log 2>&1 &
           node tests/smoke.mjs
+          node tests/mobile.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
