@@ -56,6 +56,19 @@
  };
  $('mrr-save-goal').onclick=()=>{const v=Number($('mrr-goal').value);if(!Number.isSafeInteger(v)||v<1000||v>100000000000000){B.toast('Meta inválida');return}econ.goal=v;save();renderFinance();B.toast('Meta local guardada')};
  renderFinance();
+ window.MORRISON_FINANCE_BRIDGE=Object.freeze({
+  replaceData:next=>{
+   if(!next||next.version!==1||!Array.isArray(next.entries))return false;
+   const goal=Number(next.goal);
+   econ={version:1,goal:Number.isSafeInteger(goal)&&goal>=1000&&goal<=100000000000000?goal:1000000000,
+      entries:next.entries.slice(0,1000).filter(z=>z&&['ingreso','gasto'].includes(z.kind)&&
+        Number.isSafeInteger(z.amount)&&z.amount>0&&z.amount<=100000000000&&
+        typeof z.desc==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(z.date)).map(z=>({
+          id:String(z.id||makeId()),kind:z.kind,desc:z.desc.slice(0,90),amount:z.amount,date:z.date
+        }))};
+   save();renderFinance();return true
+  }
+ });
  // Panel de actualizaciones y respaldo cifrado en Ajustes.
  const prefs=$('page-ajustes').querySelector('.two-grid');
  const card=document.createElement('div');card.className='card panel';
