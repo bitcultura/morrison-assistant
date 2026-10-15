@@ -29,13 +29,13 @@
         <button class="nav-link" data-page="hogar"><span>⌂</span> Hogar inteligente</button>
         <button class="nav-link" data-page="ajustes"><span>⚙</span> Ajustes</button>
       </nav>
-      <div class="sidebar-footer"><span class="tiny-status"></span> Modo local v1.0 <small>Sin API de pago · Sin datos simulados</small></div>
+      <div class="sidebar-footer"><span class="tiny-status"></span> Modo local v1.2 <small>Sin API de pago · Sin datos simulados</small></div>
     </aside>
     <main class="main">
       <header class="topbar"><button id="menuToggle" class="menu-toggle" aria-label="Mostrar menú">☰</button><div><span class="breadcrumb">SISTEMA / <strong id="currentView">INICIO</strong></span></div><div class="top-actions"><span class="pill"><span class="pulse"></span> PANEL LOCAL</span><span id="clock" class="clock"></span></div></header>
       <div class="content">
         <section class="page active" id="page-inicio">
-          <div class="intro"><div><div class="eyebrow">NÚCLEO DE OPERACIONES · v1.0</div><h1 id="greeting">Buen día. Soy <span>MORRISON.</span></h1><p>Precisión, fuentes verificables y acciones bajo supervisión.</p></div><div class="intro-pill">GALAXY A16 <b>+</b> TAB A9</div></div>
+          <div class="intro"><div><div class="eyebrow">NÚCLEO DE OPERACIONES · v1.2</div><h1 id="greeting">Buen día. Soy <span>MORRISON.</span></h1><p>Precisión, fuentes verificables y acciones bajo supervisión.</p></div><div class="intro-pill">GALAXY A16 <b>+</b> TAB A9</div></div>
           <div class="hero card"><div class="hero-copy"><div class="status-label"><i></i> NÚCLEO CONVERSACIONAL</div><h2>Tu asistente, a una conversación de distancia.</h2><p>ChatGPT Plus funciona en su propia aplicación. Este panel organiza tareas y acceso a sistemas; no simula una conexión de IA inexistente.</p><div class="button-row"><a class="btn primary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">↗ Abrir ChatGPT</a><button class="btn secondary" id="speakWelcome">◉ Probar voz MORRISON</button></div></div><div class="orb-zone"><div class="orb-ring"><div class="orb-core">M</div></div><small>LISTO PARA RECIBIR ÓRDENES</small></div></div>
           <div class="section-head"><h3>Vista general</h3><span>Los estados remotos se verifican antes de mostrarse</span></div>
           <div class="stats-grid">
@@ -107,10 +107,20 @@
  document.addEventListener('visibilitychange',()=>{if(document.hidden&&listening){listening=false;try{rec.stop()}catch(e){}voiceStatus('Escucha detenida al pasar a segundo plano.')}});
  window.addEventListener('hashchange',()=>{const page=location.hash.replace('#','');if(sections.includes(page))show(page)});
  function updateClock(){const n=new Date();$('clock').textContent=n.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});const h=n.getHours();$('greeting').innerHTML=(h<12?'Buenos días':h<20?'Buenas tardes':'Buenas noches')+'. Soy <span>MORRISON.</span>'}
+
+ // Interfaz limitada para módulos MORRISON: no expone credenciales ni ejecuta sistemas remotos.
+ window.MORRISON_BRIDGE=Object.freeze({
+   version:'1.2.0',
+   getData:()=>JSON.parse(JSON.stringify(data)),
+   addProject:(name)=>{const n=String(name||'').trim().slice(0,80);if(!n)return false;if(data.projects.some(p=>p.name.toLocaleLowerCase('es')===n.toLocaleLowerCase('es')))return false;data.projects.push({id:uid(),name:n});save();render();return true},
+   registerSection:(section,title)=>{if(!/^[a-z-]+$/.test(section))return;if(!sections.includes(section))sections.push(section);titles[section]=String(title||section).toUpperCase()},
+   show,toast,speak
+ });
  updateClock();setInterval(updateClock,30000);render();show(sections.includes(location.hash.slice(1))?location.hash.slice(1):'inicio');
  /* Single-file offline version: no service worker. */
 })();
 </script>
+<script src="./morrison-ops.js?v=120"></script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
 </body>
 </html>
