@@ -21,6 +21,7 @@ jobs:
       - name: Validar JavaScript, HTML y manifiesto antes de publicar
         run: |
           node --check morrison-ops.js
+          node --check sw.js
           python3 - <<'PY'
           import json,re,subprocess,pathlib
           html=pathlib.Path('index.html').read_text(encoding='utf-8')
