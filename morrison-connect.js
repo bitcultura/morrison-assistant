@@ -117,9 +117,11 @@
   const hasResult=u.searchParams.has('code')||u.searchParams.has('error');
   if(!hasResult)return;
   const code=u.searchParams.get('code'),state=u.searchParams.get('state'),err=u.searchParams.get('error');
+  // Auth0 incluye una explicación útil en error_description. Mostrarla como texto, nunca HTML.
+  const description=(u.searchParams.get('error_description')||'').replace(/\\s+/g,' ').trim().slice(0,450);
   u.searchParams.delete('code');u.searchParams.delete('state');u.searchParams.delete('error');u.searchParams.delete('error_description');
   history.replaceState(null,'',u.pathname+u.search+(u.hash||'#automatizaciones'));
-  if(err){status('mrr-auth-status','Auth0 rechazó la autorización: '+err);return}
+  if(err){sessionStorage.removeItem('mrr-pkce');status('mrr-auth-status','Auth0 rechazó la autorización: '+err+(description?' — '+description:' — revisa Monitoring → Logs en Auth0 para ver el motivo.'));return}
   let saved;try{saved=JSON.parse(sessionStorage.getItem('mrr-pkce')||'null');}catch{}
   sessionStorage.removeItem('mrr-pkce');
   if(!code||!saved||state!==saved.state||Date.now()-saved.created>600000){status('mrr-auth-status','Inicio de sesión expirado o verificación PKCE inválida.');return}
