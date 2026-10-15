@@ -127,5 +127,32 @@
  if('serviceWorker' in navigator){
    navigator.serviceWorker.addEventListener('controllerchange',()=>{status('Nueva versión instalada. Puedes pulsar «Buscar actualización» para recargar cuando termines.')});
  }
+
+ // Supervisión verificable de GitHub SIN tokens, sin ejecutar workflows.
+ const ghSection=$('page-automatizaciones');
+ const ghCard=document.createElement('div');
+ ghCard.className='card panel';
+ ghCard.style.marginTop='16px';
+ ghCard.innerHTML='<div class="panel-title">Estado de publicación de MORRISON · GitHub</div><p class="mrr-hint">Consulta pública de solo lectura. Se mostrará el último resultado realmente devuelto por GitHub; no se simulan servidores ni se ejecutan acciones.</p><div class="mrr-toolbar"><button type="button" id="mrr-gh-check" class="mrr-btn primary">Comprobar último despliegue</button><a class="mrr-btn" rel="noopener noreferrer" target="_blank" href="https://github.com/bitcultura/morrison-assistant/actions">Ver historial en GitHub ↗</a></div><p id="mrr-gh-state" class="mrr-hint" aria-live="polite">No consultado todavía.</p>';
+ ghSection?.append(ghCard);
+ const check=$('mrr-gh-check'), output=$('mrr-gh-state');
+ check.onclick=async()=>{
+   check.disabled=true;output.textContent='Consultando GitHub, espera...';
+   try{
+     const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),12000);
+     let response;
+     try{response=await fetch('https://api.github.com/repos/bitcultura/morrison-assistant/actions/runs?per_page=1',{headers:{Accept:'application/vnd.github+json'},cache:'no-store',signal:abort.signal})}finally{clearTimeout(timer)}
+     if(!response.ok)throw Error('GitHub respondió HTTP '+response.status);
+     const payload=await response.json();
+     const run=Array.isArray(payload.workflow_runs)?payload.workflow_runs[0]:null;
+     if(!run){output.textContent='GitHub no devolvió ejecuciones verificables.';return}
+     const valid=['success','failure','cancelled','skipped','timed_out','neutral','action_required'];
+     const status=valid.includes(run.conclusion)?run.conclusion:String(run.status||'desconocido');
+     const timestamp=run.updated_at?new Date(run.updated_at).toLocaleString('es-CL'):'fecha no indicada';
+     output.textContent='Despliegue #'+String(run.run_number||'?')+' · '+status+' · Última actualización: '+timestamp+'. Consultado: '+new Date().toLocaleString('es-CL')+'.';
+   }catch(err){output.textContent='No se pudo verificar GitHub: '+String(err.message||err)+'. Revisa la conexión o abre el historial.'}
+   finally{check.disabled=false}
+ };
+
  if(location.hash==='#economia')B.show('economia');
 })();
