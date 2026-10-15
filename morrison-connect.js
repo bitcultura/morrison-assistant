@@ -160,26 +160,42 @@
   if(!confirm('¿Subir un respaldo CIFRADO de este dispositivo? Si cambió el remoto, se rechazará para evitar pérdida de datos.'))return;
   await sendCurrent(true)
  }catch(e){status('mrr-sync-status',e.status===409?'Conflicto: el remoto cambió. No se sobrescribió nada. Revisa ambos equipos.':'No se pudo subir: '+e.message)}};
+ function applyRemote(raw,revision){
+  const data=JSON.parse(raw);
+  if(data.version!==1||!data.app||!Array.isArray(data.app.projects)||!Array.isArray(data.app.tasks)||!Array.isArray(data.app.notes))throw Error('Respaldo remoto incompatible');
+  if(!B.replaceData?.(data.app))throw Error('La aplicación no aceptó el respaldo');
+  if(data.economy&&data.economy.version===1&&Array.isArray(data.economy.entries)){
+   if(!window.MORRISON_FINANCE_BRIDGE?.replaceData?.(data.economy))throw Error('El módulo de economía no aceptó el respaldo');
+  }
+  knownRevision=Number(revision)||0;localSnapshot=snapString();
+ }
  async function receive(){
   const phrase=pass(),x=await getJSON(remote(),{headers:authorized()});
   if(!x.exists)throw Error('No hay copia remota');
-  const raw=await decrypt(x.payload,phrase),data=JSON.parse(raw);
-  if(data.version!==1||!data.app||!Array.isArray(data.app.projects)||!Array.isArray(data.app.tasks)||!Array.isArray(data.app.notes))throw Error('Respaldo incompatible');
+  const raw=await decrypt(x.payload,phrase);
   if(!confirm('¿REEMPLAZAR los datos locales de este dispositivo con el respaldo remoto descifrado? Haz un respaldo local antes de continuar.'))return;
-  const clean={version:1,healthUrl:'',projects:data.app.projects.slice(0,500).filter(z=>typeof z.name==='string').map(z=>({id:String(z.id||crypto.randomUUID()),name:z.name.slice(0,80)})),tasks:data.app.tasks.slice(0,1000).filter(z=>typeof z.name==='string').map(z=>({id:String(z.id||crypto.randomUUID()),name:z.name.slice(0,160),date:String(z.date||'').slice(0,10),priority:z.priority==='alta'?'alta':'normal',done:!!z.done})),notes:data.app.notes.slice(0,500).filter(z=>typeof z.title==='string').map(z=>({id:String(z.id||crypto.randomUUID()),title:z.title.slice(0,100),body:String(z.body||'').slice(0,10000),created:Number(z.created)||Date.now()}))};
-  const ec=data.economy&&data.economy.version===1&&Array.isArray(data.economy.entries)?data.economy:null;
-  localStorage.setItem('morrison-v1-store',JSON.stringify(clean));
-  if(ec)localStorage.setItem('morrison-v1-economia',JSON.stringify({version:1,goal:Number(ec.goal)||1000000000,entries:ec.entries.slice(0,1000)}));
-  knownRevision=Number(x.revision)||0;localSnapshot=raw;
-  status('mrr-sync-status','Datos restaurados. Recargando el panel...');location.reload();
+  applyRemote(raw,x.revision);
+  status('mrr-sync-status','Copia remota restaurada y panel actualizado (revisión '+knownRevision+').');
  }
  $('mrr-sync-down').onclick=async()=>{try{await receive()}catch(e){status('mrr-sync-status','No se pudo restaurar: '+e.message)}};
  $('mrr-autosync').onchange=()=>{autoEnabled=$('mrr-autosync').checked;localStorage.setItem(SYNC_FLAG,autoEnabled?'yes':'no');status('mrr-sync-status',autoEnabled?'Auto-sync preparado. Requiere sesión, frase de cifrado y comprobación inicial; se detendrá ante cambios remotos.':'Sincronización automática desactivada.')};
- async function tick(){if(!autoEnabled||document.hidden||autoBusy||!access||Date.now()>expires||!keyMemory||knownRevision===null)return;const local=snapString();if(local===localSnapshot)return;autoBusy=true;try{
-   const server=await getJSON(remote(),{headers:authorized()});
-   if(Number(server.revision)!==knownRevision){autoEnabled=false;$('mrr-autosync').checked=false;localStorage.setItem(SYNC_FLAG,'no');status('mrr-sync-status','Sincronización detenida: hubo cambios remotos. No se sobrescribió nada.');return;}
-   await sendCurrent();
-  }catch(e){status('mrr-sync-status','Auto-sync pausado: '+e.message)}finally{autoBusy=false}
+ async function tick(){
+  if(!autoEnabled||document.hidden||autoBusy||!access||Date.now()>expires||!keyMemory||knownRevision===null||!localSnapshot)return;
+  autoBusy=true;
+  try{
+   const local=snapString(),server=await getJSON(remote(),{headers:authorized()});
+   if(Number(server.revision)!==knownRevision){
+    if(local!==localSnapshot){
+      autoEnabled=false;$('mrr-autosync').checked=false;localStorage.setItem(SYNC_FLAG,'no');
+      status('mrr-sync-status','Conflicto entre equipos: ambos cambiaron. Sincronización detenida sin sobrescribir datos.');return;
+    }
+    if(!server.exists){autoEnabled=false;$('mrr-autosync').checked=false;localStorage.setItem(SYNC_FLAG,'no');status('mrr-sync-status','El respaldo remoto ya no existe.');return;}
+    const raw=await decrypt(server.payload,keyMemory);
+    applyRemote(raw,server.revision);
+    status('mrr-sync-status','Datos nuevos recibidos automáticamente (revisión '+knownRevision+').');
+   }else if(local!==localSnapshot){await sendCurrent()}
+  }catch(e){autoEnabled=false;$('mrr-autosync').checked=false;localStorage.setItem(SYNC_FLAG,'no');status('mrr-sync-status','Sincronización pausada por seguridad: '+e.message);}
+  finally{autoBusy=false}
  }
  setInterval(tick,45000);
  const today=()=>new Date().toLocaleDateString('en-CA');
