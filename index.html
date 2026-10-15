@@ -65,6 +65,19 @@
  const uid=()=>('m'+Date.now().toString(36)+Math.random().toString(36).slice(2,9));
  let data=defaultData();let n8nChecked=false;let n8nOk=false;
  try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&saved.version===1){data={...defaultData(),...saved}}}catch(e){console.warn('Respaldo local inválido',e)}
+ // Inicio único: cargar solo los NOMBRES de proyectos que ya autorizó el usuario.
+ // No modificar datos existentes ni sincronizar con servicios externos.
+ try{
+   const bootKey='morrison-project-onboarding-v1';
+   if(localStorage.getItem(bootKey)!=='done'){
+     if(Array.isArray(data.projects)&&data.projects.length===0){
+       const titles=['MORRISON','BitCultura','Planetario Rapa Nui','GOLD — Trading Lab','ORÁCULO — Trading Lab'];
+       data.projects=titles.map(name=>({id:uid(),name}));
+       localStorage.setItem(KEY,JSON.stringify(data));
+     }
+     localStorage.setItem(bootKey,'done');
+   }
+ }catch(e){console.warn('No se pudo inicializar lista local de proyectos',e)}
  function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast('No se pudo guardar en este navegador. Revisa espacio y permisos.')}}
  function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
  let toastTimer;function toast(s){const el=$('toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4400)}
