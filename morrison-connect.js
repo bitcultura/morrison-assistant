@@ -24,6 +24,7 @@
  '<p class="mrr-hint" id="mrr-sync-status" role="status">No conectado. Para configurar Auth0 debes registrar la URL de esta aplicación como Allowed Callback URL y Allowed Web Origin.</p>'+
  '<p class="mrr-hint">La sincronización nunca sobrescribe cambios simultáneos: ante un conflicto se detiene y requiere tu decisión. Sin sesión iniciada los datos permanecen locales. La escucha con pantalla apagada y las notificaciones push permanentes no están disponibles en esta PWA.</p>';
  $('page-automatizaciones').append(sec);
+ const status=(id,s)=>{if($(id))$(id).textContent=s};
 
  // Voz local configurable; el timbre masculino depende de las voces instaladas en Android.
  const voiceBox=document.createElement('div');voiceBox.className='card panel';voiceBox.id='mrr-voice-settings';voiceBox.style.marginTop='16px';
@@ -74,7 +75,7 @@
  '<div class="mrr-toolbar">'+btn('mrr-alert-check','Revisar tareas pendientes')+btn('mrr-alert-enable','Permitir notificaciones')+'</div>'+
  '<p class="mrr-hint" id="mrr-alert-status" role="status">Sin comprobar.</p>';
  $('page-agenda').append(alert);
- const status=(id,s)=>{if($(id))$(id).textContent=s};
+
  let access='',expires=0,knownRevision=null,localSnapshot='',autoBusy=false,autoEnabled=localStorage.getItem(SYNC_FLAG)==='yes',keyMemory='';
  $('mrr-client-id').value=localStorage.getItem(clientKey)||'';
  $('mrr-autosync').checked=autoEnabled;
