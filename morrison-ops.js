@@ -135,6 +135,12 @@
  ghCard.style.marginTop='16px';
  ghCard.innerHTML='<div class="panel-title">Estado de publicación de MORRISON · GitHub</div><p class="mrr-hint">Consulta pública de solo lectura. Se mostrará el último resultado realmente devuelto por GitHub; no se simulan servidores ni se ejecutan acciones.</p><div class="mrr-toolbar"><button type="button" id="mrr-gh-check" class="mrr-btn primary">Comprobar último despliegue</button><a class="mrr-btn" rel="noopener noreferrer" target="_blank" href="https://github.com/bitcultura/morrison-assistant/actions">Ver historial en GitHub ↗</a></div><p id="mrr-gh-state" class="mrr-hint" aria-live="polite">No consultado todavía.</p>';
  ghSection?.append(ghCard);
+
+ const n8nSetup=document.createElement('div');
+ n8nSetup.className='card panel';
+ n8nSetup.style.marginTop='16px';
+ n8nSetup.innerHTML='<div class="panel-title">Conectar el n8n existente — instalación manual requerida</div><p class="mrr-hint">El servidor n8n ya existe en Railway, pero la conexión autorizada en ChatGPT es únicamente de lectura. Esta acción necesita importar un workflow nuevo desde el panel web; no modificaremos BitCultura.</p><div class="mrr-toolbar"><a class="mrr-btn primary" rel="noopener noreferrer" target="_blank" href="https://n8n-production-d5cb.up.railway.app/">Abrir n8n ↗</a><a class="mrr-btn" rel="noopener noreferrer" target="_blank" href="https://github.com/bitcultura/morrison-assistant/blob/main/n8n/MORRISON-health-readonly.json">Obtener workflow de prueba ↗</a></div><ol class="mrr-hint"><li>Importa el archivo JSON como workflow nuevo llamado MORRISON.</li><li>Comprueba que solo tiene GET Webhook y Respond to Webhook; no cambia datos.</li><li>Actívalo cuando hayas verificado sus nodos y copia la URL de producción HTTPS en el formulario superior.</li><li>Pulsa Probar conexión. El estado debe quedar verificado solo si hay respuesta real.</li></ol><p class="mrr-hint">No introduzcas tokens ni contraseñas en esta página.</p>';
+ ghSection?.append(n8nSetup);
  const check=$('mrr-gh-check'), output=$('mrr-gh-state');
  check.onclick=async()=>{
    check.disabled=true;output.textContent='Consultando GitHub, espera...';
