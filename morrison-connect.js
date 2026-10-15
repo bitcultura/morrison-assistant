@@ -24,6 +24,50 @@
  '<p class="mrr-hint" id="mrr-sync-status" role="status">No conectado. Para configurar Auth0 debes registrar la URL de esta aplicación como Allowed Callback URL y Allowed Web Origin.</p>'+
  '<p class="mrr-hint">La sincronización nunca sobrescribe cambios simultáneos: ante un conflicto se detiene y requiere tu decisión. Sin sesión iniciada los datos permanecen locales. La escucha con pantalla apagada y las notificaciones push permanentes no están disponibles en esta PWA.</p>';
  $('page-automatizaciones').append(sec);
+
+ // Voz local configurable; el timbre masculino depende de las voces instaladas en Android.
+ const voiceBox=document.createElement('div');voiceBox.className='card panel';voiceBox.id='mrr-voice-settings';voiceBox.style.marginTop='16px';
+ voiceBox.innerHTML='<div class="panel-title">Voz MORRISON · Navegador</div><p class="mrr-hint">Elige una voz de español instalada. No usa servicios de IA ni permite escucha con pantalla apagada.</p><select id="mrr-voice-pick" aria-label="Voces disponibles" style="width:100%;padding:10px;background:#061624;color:white;border:1px solid #34566d;border-radius:8px"></select><div class="mrr-toolbar">'+btn('mrr-voice-test','Probar voz elegida')+'</div><p class="mrr-hint" id="mrr-voice-status">Las voces dependen del sistema Android.</p>';
+ $('page-ajustes').append(voiceBox);
+ const voices=()=>typeof speechSynthesis!=='undefined'?speechSynthesis.getVoices():[];
+ const fillVoices=()=>{
+  const sel=$('mrr-voice-pick');if(!sel)return;
+  const available=voices().filter(v=>(v.lang||'').toLowerCase().startsWith('es'));
+  const old=localStorage.getItem('mrr-voice-name')||'';
+  sel.textContent='';for(const v of available){const op=document.createElement('option');op.value=v.name;op.textContent=v.name+' ('+v.lang+')';sel.append(op)}
+  if(available.some(x=>x.name===old))sel.value=old;
+  status('mrr-voice-status',available.length?available.length+' voz/ces de español disponibles. El tono depende del dispositivo.':'Este navegador todavía no ha cargado voces en español.');
+ };
+ if('speechSynthesis' in window){fillVoices();speechSynthesis.addEventListener?.('voiceschanged',fillVoices);}
+ $('mrr-voice-pick').onchange=()=>localStorage.setItem('mrr-voice-name',$('mrr-voice-pick').value);
+ $('mrr-voice-test').onclick=()=>{
+  if(!('speechSynthesis' in window)){status('mrr-voice-status','Síntesis de voz no compatible.');return}
+  const name=$('mrr-voice-pick').value,voice=voices().find(v=>v.name===name);
+  if(!voice){status('mrr-voice-status','Selecciona una voz disponible.');return}
+  localStorage.setItem('mrr-voice-name',name);
+  const u=new SpeechSynthesisUtterance('Hola. Soy Morrison. Sistema de voz listo para operar en primer plano.');
+  u.voice=voice;u.lang=voice.lang;u.rate=.93;u.pitch=.84;speechSynthesis.cancel();speechSynthesis.speak(u);
+ };
+ // El hogar inteligente requiere una plataforma realmente instalada; jamás incrustar tokens.
+ const home=document.createElement('div');home.className='card panel';home.id='mrr-home-adapter';home.style.marginTop='16px';
+ home.innerHTML='<div class="panel-title">Dispositivos inteligentes — preparación segura</div>'+
+ '<p class="mrr-hint">Abre el panel HTTPS de Home Assistant u otro controlador local compatible, si ya lo tienes. No se envían órdenes ni se almacenan credenciales.</p>'+
+ '<label class="mrr-hint" for="mrr-home-url">Dirección HTTPS del panel de tu controlador (sin usuario ni token)</label>'+
+ '<input id="mrr-home-url" type="url" placeholder="https://mi-controlador.example/" style="width:100%;padding:10px;background:#061624;color:white;border:1px solid #34566d;border-radius:8px">'+
+ '<div class="mrr-toolbar">'+btn('mrr-home-open','Abrir controlador')+'</div>'+
+ '<p class="mrr-hint" id="mrr-home-status">Sin dispositivos enlazados ni comandos habilitados.</p>';
+ $('page-hogar').append(home);
+ $('mrr-home-url').value=localStorage.getItem('mrr-home-url')||'';
+ $('mrr-home-open').onclick=()=>{
+  try{
+   const u=new URL($('mrr-home-url').value.trim());
+   if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash||!u.hostname.includes('.'))throw Error('Usa una URL HTTPS del controlador sin parámetros ni credenciales');
+   localStorage.setItem('mrr-home-url',u.origin+u.pathname);
+   window.open(u.origin+u.pathname,'_blank','noopener,noreferrer');
+   status('mrr-home-status','Se abrió el controlador externo. MORRISON no ha ejecutado acciones.');
+  }catch(e){status('mrr-home-status','Dirección inválida: '+e.message)}
+ };
+
  const alert=document.createElement('div');alert.className='card panel';alert.id='mrr-reminders';alert.style.marginTop='16px';
  alert.innerHTML='<div class="panel-title">Avisos de agenda — dispositivo actual</div>'+
  '<p class="mrr-hint">Comprueba tareas con fecha de hoy o vencidas. El aviso del navegador funciona mientras MORRISON está abierto; no promete notificaciones con la app cerrada.</p>'+
@@ -145,5 +189,6 @@
  function checkAlerts(){if(document.hidden||!('Notification' in window)||Notification.permission!=='granted')return;const tasks=due();if(!tasks.length)return;const stamp=today(),key='mrr-alerted-'+stamp;try{if(localStorage.getItem(key)==='yes')return;new Notification('MORRISON · Agenda',{body:tasks.length+' tarea(s) por revisar',tag:'morrison-agenda'});localStorage.setItem(key,'yes')}catch(_){}}
  setInterval(checkAlerts,60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAlerts()});
+ if($('healthUrl')&&!$('healthUrl').value)$('healthUrl').value=GATEWAY+'/morrison/v1/health';
  finishAuth().catch(e=>status('mrr-auth-status','Error de autorización: '+e.message));
 })();
