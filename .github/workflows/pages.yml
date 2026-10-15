@@ -37,6 +37,8 @@ jobs:
           for entry in manifest['icons']: assert pathlib.Path(entry['src']).exists()
           print('MORRISON: validación estática correcta')
           PY
+      - name: Validar flujo MORRISON de solo lectura
+        run: node tests/n8n-health.mjs
       - name: Instalar Chromium para pruebas de interfaz
         run: |
           npm install --no-save playwright@1.56.1
