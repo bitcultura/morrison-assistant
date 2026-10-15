@@ -1,28 +1,32 @@
-/* MORRISON 1.2 — network first para documentos; respaldo offline y actualizaciones seguras */
-const VERSION='morrison-v1.2.0-20261015';
-const FILES=['./','./index.html','./morrison-ops.js?v=120','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+/* MORRISON 1.2.1 — actualización en línea primero, sin borrar datos locales */
+const VERSION='morrison-v1.2.1-20261015';
+const STATIC=['./','./index.html','./morrison-ops.js?v=120','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
- event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));
+ event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(STATIC)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',event=>{
- event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('morrison-')&&key!==VERSION).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
+ event.waitUntil((async()=>{
+   const keys=await caches.keys();
+   await Promise.all(keys.filter(k=>k.startsWith('morrison-')&&k!==VERSION).map(k=>caches.delete(k)));
+   await self.clients.claim();
+ })());
 });
 self.addEventListener('fetch',event=>{
  const req=event.request;
  if(req.method!=='GET')return;
  const url=new URL(req.url);
  if(url.origin!==self.location.origin)return;
- if(req.mode==='navigate'){
-   event.respondWith(fetch(req,{cache:'no-store'}).then(response=>{
-     if(response.ok){const copy=response.clone();event.waitUntil(caches.open(VERSION).then(cache=>cache.put('./index.html',copy)));}
+ event.respondWith((async()=>{
+   try{
+     const response=await fetch(req,req.mode==='navigate'?{cache:'no-store'}:{});
+     if(response.ok){
+       const cache=await caches.open(VERSION);
+       await cache.put(req.mode==='navigate'?'./index.html':req,response.clone());
+     }
      return response;
-   }).catch(()=>caches.match('./index.html')));
-   return;
- }
- event.respondWith(fetch(req).then(response=>{
-   if(response.ok&&['script','style','image','manifest'].includes(req.destination)){
-     const copy=response.clone();event.waitUntil(caches.open(VERSION).then(cache=>cache.put(req,copy)));
+   }catch(_){
+     const cached=await caches.match(req.mode==='navigate'?'./index.html':req);
+     return cached||Response.error();
    }
-   return response;
- }).catch(()=>caches.match(req)));
+ })());
 });
