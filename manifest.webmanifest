@@ -1,0 +1,18 @@
+{
+  "name": "MORRISON — Centro de control",
+  "short_name": "MORRISON",
+  "description": "Panel personal para Galaxy A16 y Tab A9. Datos guardados localmente.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050c15",
+  "theme_color": "#050c15",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
