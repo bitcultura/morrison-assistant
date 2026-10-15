@@ -1,45 +1,43 @@
-# MORRISON — asistente personal Android
+# MORRISON 1.2 — Asistente personal Android
 
-Panel web gratuito para **Samsung Galaxy A16 5G** y **Galaxy Tab A9**. Versión inicial 1.1, independiente de otros proyectos.
+**[Abrir MORRISON](https://bitcultura.github.io/morrison-assistant/?v=120)**
 
-## Abrir la aplicación
+Panel personal para **Galaxy A16 5G** + **Galaxy Tab A9**, con costo adicional de software **$0**. Usa ChatGPT Plus por separado, **sin API OpenAI de pago**.
 
-Sitio previsto: https://bitcultura.github.io/morrison-assistant/
+## Funcionalidades disponibles
 
-> La URL funciona solo después de habilitar **Settings → Pages → Build and deployment → Source: GitHub Actions** y terminar correctamente el despliegue.
+- Panel oscuro adaptativo, instalable en ambos Android.
+- Guardado local de proyectos, tareas y notas; carga guiada de nombres de proyectos (sin inventar sus avances).
+- Voz de síntesis y reconocimiento experimentales **solo con la app abierta**. Comando probado «Morrison, abre proyectos»; la nueva versión añade «Morrison, abre economía» y «Morrison, agrega tarea ...» con confirmación.
+- Economía personal: ingresos, gastos, balance de movimientos y meta CLP. Datos manuales, **no una promesa de ganancias**.
+- Exportación e importación manual de archivos de respaldo **cifrados** con contraseña.
+- Integración n8n de **salud/read-only** preparada como JSON, pero no importada ni activada.
+- Actualización de PWA optimizada con controles y verificación automática de sintaxis en GitHub Actions.
 
-En Android: abre la URL en Chrome, menú **⋮ → Añadir a pantalla de inicio / Instalar aplicación** (opciones según versión del navegador).
+## Importante
 
-## Qué funciona hoy
+- **No existe sincronización automática** entre equipos. El respaldo cifrado es una transferencia manual que **sobrescribe** los datos del dispositivo de destino.
+- Los datos locales normales **no están cifrados en reposo**. No introduzcas secretos ni datos bancarios en el panel.
+- La activación con pantalla bloqueada, asistentes autónomos, control del hogar, conectores remotos y agenda compartida **no están implementados**.
+- El repositorio es **público**; jamás agregar contraseñas, URL de webhook con secretos, tokens ni datos privados.
 
-- Panel responsivo, proyectos, lista de tareas, agenda manual y notas.
-- Guardado local en el navegador de **cada dispositivo**, con exportación/importación manual de respaldos JSON.
-- Síntesis y reconocimiento experimental de voz cuando Android y el navegador los permiten.
-- Atajo a ChatGPT (se utiliza la aplicación oficial con tu plan existente, **sin API incluida**).
-- Accesos para buscar fuentes oficiales y académicas.
-- Prueba de conexión optativa a un webhook n8n **MORRISON separado y de solo lectura**.
+## Instalación y documentación
 
-## Qué **no** funciona todavía
+- [Instalación, actualización y pruebas Android](docs/INSTALACION_ANDROID_Y_PRUEBAS.md)
+- [Arquitectura y seguridad](docs/SEGURIDAD_Y_ARQUITECTURA.md)
+- [n8n — importación separada y permisos](docs/INTEGRACION_N8N_SEGURA.md)
+- [Prompt maestro de personalidad](docs/PROMPT_MAESTRO.md)
+- [Plan de implementación](docs/PLAN_IMPLEMENTACION.md)
+- [Seguimiento de trabajo por prioridad](https://github.com/bitcultura/morrison-assistant/issues)
 
-- La palabra «Morrison» no despierta el dispositivo con la pantalla bloqueada ni garantiza escucha en segundo plano.
-- No hay sincronización automática entre tablet y teléfono ni memoria compartida con ChatGPT.
-- No ejecuta acciones n8n, no controla equipos domésticos y no vigila servidores 24/7.
-- Un estado de n8n solo es válido después de probar el webhook independiente.
-- Ninguna API de IA de pago está conectada.
+En Android abre el enlace con Chrome y elige **Instalar aplicación** o **Añadir a pantalla de inicio**. En **Ajustes → Buscar actualización** puedes verificar nuevas versiones sin borrar datos locales. Si existe caché antigua, entra mediante `?v=120#ajustes` y recarga.
 
-## Publicación
+## Verificación de calidad
 
-El workflow [pages.yml](.github/workflows/pages.yml) despliega el contenido estático de este repositorio en GitHub Pages. En **Settings → Pages**, escoger **GitHub Actions** como fuente; después revisar **Actions** para comprobar que la publicación finalizó correctamente. No es necesario contratar Railway ni servicios adicionales.
+`.github/workflows/pages.yml` valida sintaxis del JavaScript de la extensión y de los scripts integrados, el HTML básico y el manifiesto antes de publicar. Esto **no sustituye** probar voz, micrófono, guardado y sincronización manual en teléfonos reales.
 
-## Seguridad
+## Integración con ChatGPT
 
-**Este repositorio es público.** Nunca subas claves, tokens, contraseñas, respaldos personales ni URL con credenciales. Los datos que anotes se guardan en localStorage del navegador y pueden perderse al borrar datos de navegación. Haz respaldos regularmente. No guardes información altamente sensible: el almacenamiento local no está cifrado por MORRISON.
+MORRISON no es un cliente conectado a la API de ChatGPT. Abre la aplicación web oficial y aprovecha la suscripción Plus existente. Las autorizaciones de plugins dentro de ChatGPT **no son permisos transferibles al sitio público**.
 
-El ejemplo n8n en [n8n/MORRISON-health-readonly.json](n8n/MORRISON-health-readonly.json) devuelve únicamente un JSON público fijo para comprobar conectividad; **no** está importado ni activado automáticamente.
-
-## Documentación
-
-- [Personalidad y reglas de MORRISON](docs/PROMPT_MAESTRO.md)
-- [Plan y limitaciones de implementación](docs/PLAN_IMPLEMENTACION.md)
-
-Meta: costo adicional **CLP $0**, compatible con el uso de ChatGPT Plus en su app oficial. No equivale a un asistente Android con acceso de sistema ni a una integración API de ChatGPT.
+La seguridad, confidencialidad de datos y el costo $0 mandan sobre acelerar funciones.
