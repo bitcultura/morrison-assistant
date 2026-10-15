@@ -1,0 +1,53 @@
+name: MORRISON — auditoría diaria de conexiones públicas
+on:
+  schedule:
+    - cron: '17 13 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  connections:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar metadata pública OAuth y disponibilidad n8n
+        env:
+          MCP_METADATA_URL: https://bitcultura-n8n-mcp-production.up.railway.app/.well-known/oauth-protected-resource
+          N8N_URL: https://n8n-production-d5cb.up.railway.app/
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request, urllib.error
+          mcp=os.environ['MCP_METADATA_URL']
+          n8n=os.environ['N8N_URL']
+          def request(url):
+              req=urllib.request.Request(url,headers={'User-Agent':'MORRISON-public-healthcheck/1.0'})
+              for i in range(3):
+                  try:
+                      with urllib.request.urlopen(req,timeout=12) as r:
+                          return r.status,r.read(16384)
+                  except urllib.error.HTTPError as e:
+                      if e.code in (301,302,303,307,308): return e.code,b''
+                      if i==2: raise
+                  except Exception:
+                      if i==2: raise
+                  time.sleep(2*(i+1))
+          code,body=request(mcp)
+          assert code==200, f'MCP metadata HTTP {code}'
+          data=json.loads(body)
+          assert {'read:workflows','write:workflows'}.issubset(set(data.get('scopes_supported',[])))
+          assert data.get('authorization_servers'),'Sin authorization_servers en metadata'
+          print('MCP OAuth: metadata pública válida (no demuestra token write)')
+          code,_=request(n8n)
+          assert code==200, f'n8n HTTP {code}'
+          print('n8n: página pública accesible (no demuestra ejecución workflows)')
+          PY
+      - name: Resumen de auditoría
+        if: always()
+        run: |
+          {
+            echo '## MORRISON: auditoría pública'
+            echo 'La ejecución comprueba el metadata OAuth del MCP y la disponibilidad HTTP de n8n.'
+            echo 'No envía tokens, no consulta Notion privado, no modifica GitHub, Railway ni workflows n8n.'
+            echo 'Una prueba exitosa NO confirma el permiso write:workflows ni la sincronización del panel.'
+          } >> "$GITHUB_STEP_SUMMARY"
