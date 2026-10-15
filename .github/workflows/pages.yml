@@ -18,6 +18,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validar JavaScript, HTML y manifiesto antes de publicar
+        run: |
+          node --check morrison-ops.js
+          python3 - <<'PY'
+          import json,re,subprocess,pathlib
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          assert '<script src="./morrison-ops.js?v=120"></script>' in html
+          assert 'MORRISON_BRIDGE' in html
+          assert 'index.html' in pathlib.Path('sw.js').read_text()
+          for i,script in enumerate(re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S)):
+              path=pathlib.Path('/tmp/morrison-inline-'+str(i)+'.js')
+              path.write_text(script,encoding='utf-8')
+              subprocess.run(['node','--check',str(path)],check=True)
+          manifest=json.loads(pathlib.Path('manifest.webmanifest').read_text())
+          assert manifest['name'].startswith('MORRISON')
+          for entry in manifest['icons']: assert pathlib.Path(entry['src']).exists()
+          print('MORRISON: validación estática correcta')
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
