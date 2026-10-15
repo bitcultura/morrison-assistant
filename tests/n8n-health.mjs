@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const workflow = JSON.parse(fs.readFileSync('n8n/MORRISON-health-readonly.json', 'utf8'));
+assert.match(workflow.name, /^MORRISON(?:\\b|[\\s_-])/i, 'El workflow debe pertenecer a MORRISON');
+assert.equal(workflow.active, false, 'El archivo no puede activar el workflow');
+assert.ok(Array.isArray(workflow.nodes) && workflow.nodes.length===2, 'Exactamente 2 nodos');
+const nodeTypes = workflow.nodes.map(n => n.type);
+assert.deepEqual(nodeTypes.sort(), ['n8n-nodes-base.respondToWebhook','n8n-nodes-base.webhook'].sort(), 'Nodos permitidos');
+const webhook = workflow.nodes.find(n=>n.type==='n8n-nodes-base.webhook');
+const response = workflow.nodes.find(n=>n.type==='n8n-nodes-base.respondToWebhook');
+assert.equal(webhook.parameters.httpMethod, 'GET');
+assert.equal(webhook.parameters.responseMode, 'responseNode');
+assert.equal(webhook.parameters.path, 'morrison-v1-health');
+assert.equal(response.parameters.respondWith,'json');
+assert.equal(response.parameters.options.responseCode,200);
+const payload = JSON.parse(response.parameters.responseBody);
+assert.deepEqual(payload,{system:'MORRISON',status:'ready',readonly:true});
+const edges = workflow.connections?.[webhook.name]?.main?.[0] || [];
+assert.equal(edges.length,1);
+assert.equal(edges[0].node,response.name);
+assert.ok(workflow.nodes.every(n => !n.credentials),'No se permiten credenciales');
+assert.ok(workflow.nodes.every(n => !n.disabled),'No se permiten nodos deshabilitados');
+const headers = response.parameters.options?.responseHeaders?.entries || [];
+assert.ok(headers.some(h=>h.name.toLowerCase()==='cache-control' && h.value==='no-store'));
+const json = JSON.stringify(workflow);
+assert.ok(!/api.?key|bearer|token|password|secret/i.test(json), 'El piloto no debe incluir secretos ni tokens');
+console.log('MORRISON: borrador n8n validado; GET + respuesta fija, inactivo, sin credenciales.');
