@@ -12,6 +12,7 @@ Panel personal para **Galaxy A16 5G** + **Galaxy Tab A9**, con costo adicional d
 - Economía personal: ingresos, gastos, balance de movimientos y meta CLP. Datos manuales, **no una promesa de ganancias**.
 - Exportación e importación manual de archivos de respaldo **cifrados** con contraseña.
 - Integración n8n de **salud/read-only** preparada como JSON, pero no importada ni activada.
+- MCP de Railway: las cuatro consultas n8n funcionan; creación/edición de borradores MORRISON están implementadas con alcance OAuth adicional, pendiente de autorización efectiva en ChatGPT. No se exponen funciones de activación.
 - Actualización de PWA optimizada con controles y verificación automática de sintaxis en GitHub Actions.
 
 ## Importante
@@ -26,6 +27,7 @@ Panel personal para **Galaxy A16 5G** + **Galaxy Tab A9**, con costo adicional d
 - [Instalación, actualización y pruebas Android](docs/INSTALACION_ANDROID_Y_PRUEBAS.md)
 - [Arquitectura y seguridad](docs/SEGURIDAD_Y_ARQUITECTURA.md)
 - [n8n — importación separada y permisos](docs/INTEGRACION_N8N_SEGURA.md)
+- [OAuth y permisos del MCP MORRISON (estado real y prueba)](docs/OAUTH_MCP_MORRISON.md)
 - [Prompt maestro de personalidad](docs/PROMPT_MAESTRO.md)
 - [Plan de implementación](docs/PLAN_IMPLEMENTACION.md)
 - [Seguimiento de trabajo por prioridad](https://github.com/bitcultura/morrison-assistant/issues)
