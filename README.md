@@ -1,45 +1,46 @@
-# MORRISON 1.2 — Asistente personal Android
+# MORRISON 1.3 — Asistente personal Android
 
-**[Abrir MORRISON](https://bitcultura.github.io/morrison-assistant/?v=120)**
+**[Abrir MORRISON](https://bitcultura.github.io/morrison-assistant/)**
 
-Panel personal para **Galaxy A16 5G** + **Galaxy Tab A9**, con costo adicional de software **$0**. Usa ChatGPT Plus por separado, **sin API OpenAI de pago**.
+Centro de control personal para **Galaxy A16 5G** + **Galaxy Tab A9**. Usa ChatGPT Plus desde la aplicación oficial, sin atribuirle créditos de API.
 
-## Funcionalidades disponibles
+## Capacidades publicadas
 
-- Panel oscuro adaptativo, instalable en ambos Android.
-- Guardado local de proyectos, tareas y notas; carga guiada de nombres de proyectos (sin inventar sus avances).
-- Voz de síntesis y reconocimiento experimentales **solo con la app abierta**. Comando probado «Morrison, abre proyectos»; la nueva versión añade «Morrison, abre economía» y «Morrison, agrega tarea ...» con confirmación.
-- Economía personal: ingresos, gastos, balance de movimientos y meta CLP. Datos manuales, **no una promesa de ganancias**.
-- Exportación e importación manual de archivos de respaldo **cifrados** con contraseña.
-- Integración n8n de **salud/read-only** preparada como JSON, pero no importada ni activada.
-- MCP de Railway: las cuatro consultas n8n funcionan; creación/edición de borradores MORRISON están implementadas con alcance OAuth adicional, pendiente de autorización efectiva en ChatGPT. No se exponen funciones de activación.
-- Actualización de PWA optimizada con controles y verificación automática de sintaxis en GitHub Actions.
+- Panel futurista PWA responsive con proyectos, agenda, tareas, notas y economía personal.
+- Voz local y reconocimiento de comandos con el navegador **abierto**; selector de voces españolas instaladas.
+- Alertas de tareas vencidas/hoy; notificaciones del navegador **solo mientras está abierta la aplicación**.
+- Consulta **real** de disponibilidad del gateway Railway + n8n, sin contraseñas.
+- Inicio de sesión Auth0 mediante OAuth PKCE con Client ID público de una **Single Page Application**, configurada por el propietario.
+- Copia remota opcional **cifrada de extremo a extremo en el navegador** (AES-GCM/PBKDF2), almacenada sobre el PostgreSQL Railway existente; cada usuario queda aislado por JWT.
+- Sincronización bidireccional con verificación de revisiones **cada 45 segundos mientras la PWA esté visible y la sesión activa**, deteniéndose si ambos equipos editan a la vez. Requiere terminar la configuración SPA de Auth0 y una primera carga/restauración por dispositivo.
+- Guardar la dirección HTTPS de un panel externo de automatización del hogar y abrirlo; **sin control de hardware instalado ni credenciales guardadas**.
+- Respaldo local cifrado exportable/importable; GitHub Actions prueba interfaz móvil/tablet y comprueba el endpoint protegido.
+- Herramientas ChatGPT para crear y editar borradores MORRISON en n8n, con OAuth RBAC y restricciones de seguridad. **No** permiten activar workflows ni editar BitCultura.
 
-## Importante
+## Requisitos para habilitar sincronización
 
-- **No existe sincronización automática** entre equipos. El respaldo cifrado es una transferencia manual que **sobrescribe** los datos del dispositivo de destino.
-- Los datos locales normales **no están cifrados en reposo**. No introduzcas secretos ni datos bancarios en el panel.
-- La activación con pantalla bloqueada, asistentes autónomos, control del hogar, conectores remotos y agenda compartida **no están implementados**.
-- El repositorio es **público**; jamás agregar contraseñas, URL de webhook con secretos, tokens ni datos privados.
+Consulta **[Puesta en marcha MORRISON 1.3](docs/MORRISON_1_3_PUESTA_EN_MARCHA.md)**. El usuario debe configurar una aplicación Auth0 **Single Page Application** con Allowed Callback URL exacta: `https://bitcultura.github.io/morrison-assistant/`, Allowed Web Origins: `https://bitcultura.github.io`, habilitar acceso a API del MCP y pegar en el panel exclusivamente su **Client ID** público (no secreto).
 
-## Instalación y documentación
+En cada dispositivo inicia sesión con la misma cuenta Auth0, introduce la misma frase de cifrado y configura el primer respaldo/restauración. Nunca introduzcas claves de n8n, GitHub o Railway en la web.
 
-- [Instalación, actualización y pruebas Android](docs/INSTALACION_ANDROID_Y_PRUEBAS.md)
+## Estado verificado y límites
+
+- Railway MCP, n8n, PostgreSQL y FFmpeg están operativos; el diagnóstico MCP confirma acceso real a PostgreSQL (`sync_db_ready=true`).
+- El MCP maneja lectura/escritura autenticadas por RBAC solo de **borradores MORRISON**. Hay **dos workflows MORRISON inactivos**; no inventar una URL de producción activa.
+- El servicio HTTP de salud es el gateway independiente en Railway; **no** implica que el workflow n8n de salud esté activo.
+- ChatGPT Plus funciona por separado. No existe un proceso de inteligencia artificial autónomo dentro de la PWA.
+- La escucha con pantalla bloqueada y notificaciones push permanentes requieren Android nativo u otro servicio; no están implementadas.
+- No hay dispositivos inteligentes vinculados. Las pruebas automatizadas de Chromium no sustituyen comprobaciones físicas en ambos Samsung.
+- Los datos de trabajo en `localStorage` no están cifrados mientras la PWA funciona. La copia remota y el respaldo descargado sí están cifrados.
+- Reutiliza infraestructura Railway Hobby existente; **no se añadió un servicio nuevo ni API OpenAI de pago**, pero el consumo de recursos de Railway podría variar.
+- El repositorio es **público**. Prohibido agregar tokens, claves, contraseñas, identificaciones privadas o URLs secretas.
+
+## Más información
+
 - [Arquitectura y seguridad](docs/SEGURIDAD_Y_ARQUITECTURA.md)
 - [n8n — importación separada y permisos](docs/INTEGRACION_N8N_SEGURA.md)
-- [OAuth y permisos del MCP MORRISON (estado real y prueba)](docs/OAUTH_MCP_MORRISON.md)
-- [Prompt maestro de personalidad](docs/PROMPT_MAESTRO.md)
-- [Plan de implementación](docs/PLAN_IMPLEMENTACION.md)
-- [Seguimiento de trabajo por prioridad](https://github.com/bitcultura/morrison-assistant/issues)
+- [OAuth y auditoría MCP](docs/OAUTH_MCP_MORRISON.md)
+- [Plan y criterios de aceptación](docs/PLAN_IMPLEMENTACION.md)
+- [Seguimiento de pruebas y despliegues](https://github.com/bitcultura/morrison-assistant/actions)
 
-En Android abre el enlace con Chrome y elige **Instalar aplicación** o **Añadir a pantalla de inicio**. En **Ajustes → Buscar actualización** puedes verificar nuevas versiones sin borrar datos locales. Si existe caché antigua, entra mediante `?v=120#ajustes` y recarga.
-
-## Verificación de calidad
-
-`.github/workflows/pages.yml` valida sintaxis del JavaScript de la extensión y de los scripts integrados, el HTML básico y el manifiesto antes de publicar. Esto **no sustituye** probar voz, micrófono, guardado y sincronización manual en teléfonos reales.
-
-## Integración con ChatGPT
-
-MORRISON no es un cliente conectado a la API de ChatGPT. Abre la aplicación web oficial y aprovecha la suscripción Plus existente. Las autorizaciones de plugins dentro de ChatGPT **no son permisos transferibles al sitio público**.
-
-La seguridad, confidencialidad de datos y el costo $0 mandan sobre acelerar funciones.
+Para instalar en Android abre el enlace en Chrome → **Instalar aplicación** o **Añadir a pantalla de inicio**. Después de un despliegue usa Ajustes → Buscar actualización.
