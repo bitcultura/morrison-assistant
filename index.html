@@ -125,6 +125,14 @@
  window.MORRISON_BRIDGE=Object.freeze({
    version:'1.2.0',
    getData:()=>JSON.parse(JSON.stringify(data)),
+   replaceData:(next)=>{
+     if(!next||next.version!==1||!Array.isArray(next.projects)||!Array.isArray(next.tasks)||!Array.isArray(next.notes))return false;
+     data={version:1,healthUrl:data.healthUrl||'',
+       projects:next.projects.slice(0,500).filter(x=>typeof x.name==='string').map(x=>({id:String(x.id||uid()),name:x.name.slice(0,80)})),
+       tasks:next.tasks.slice(0,1000).filter(x=>typeof x.name==='string').map(x=>({id:String(x.id||uid()),name:x.name.slice(0,160),date:String(x.date||'').slice(0,10),priority:x.priority==='alta'?'alta':'normal',done:!!x.done})),
+       notes:next.notes.slice(0,500).filter(x=>typeof x.title==='string').map(x=>({id:String(x.id||uid()),title:x.title.slice(0,100),body:String(x.body||'').slice(0,10000),created:Number(x.created)||Date.now()}))};
+     save();render();return true
+   },
    addProject:(name)=>{const n=String(name||'').trim().slice(0,80);if(!n)return false;if(data.projects.some(p=>p.name.toLocaleLowerCase('es')===n.toLocaleLowerCase('es')))return false;data.projects.push({id:uid(),name:n});save();render();return true},
    addTask:(name)=>{const n=String(name||'').trim().slice(0,160);if(!n)return false;data.tasks.push({id:uid(),name:n,date:'',priority:'normal',done:false});save();render();return true},
    registerSection:(section,title)=>{if(!/^[a-z-]+$/.test(section))return;if(!sections.includes(section))sections.push(section);titles[section]=String(title||section).toUpperCase()},
