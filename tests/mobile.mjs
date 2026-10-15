@@ -22,7 +22,7 @@ try{
   assert.ok(/Inicia sesión Auth0/.test(state),'Sync may never claim authenticated without sign-in: '+state);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(overflow<4,'Horizontal overflow '+d.name+': '+overflow);
-  await page.locator('#menuToggle').click();
+  if(d.width<=740)await page.locator('#menuToggle').click();
   await page.locator('[data-page=agenda]').click();
   await page.locator('#mrr-reminders').waitFor();
   await page.locator('#mrr-alert-check').click();
