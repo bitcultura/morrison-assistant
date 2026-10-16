@@ -1,4 +1,4 @@
-/* MORRISON 1.4 — Botón de conversación en Inicio.
+/* MORRISON 1.4.1 — Corrección de diálogo y cancelación de micrófono.
    Comandos y respuestas LOCALES; preguntas generales se entregan a ChatGPT por separado.
    No requiere credenciales ni API de pago. */
 (()=>{'use strict';
@@ -39,15 +39,21 @@
  <div class="mrr-voice-footer">
  <button id="mrr-talk-copy" type="button" class="btn secondary">Copiar pregunta</button>
  <a id="mrr-talk-chatgpt" class="btn secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">💬 Preguntas abiertas en ChatGPT ↗</a></div>
- <p class="mrr-voice-help">Las preguntas generales se responden en ChatGPT (abre su micrófono allí). MORRISON todavía no dispone de IA conversacional integrada.</p>`;
+ <p class="mrr-voice-help">Puedo conversar sobre tareas y proyectos guardados. Para preguntas generales, abre ChatGPT y usa su micrófono. La IA todavía funciona en una aplicación separada.</p>`;
  hero.insertAdjacentElement('afterend',panel);
  const $=id=>document.getElementById(id);
  let current=null,listening=false;
  const inform=(s,kind='info')=>{$('mrr-talk-status').textContent=s;$('mrr-talk-status').dataset.kind=kind};
  const answer=s=>{$('mrr-talk-answer').textContent=s;if(typeof B.speak==='function')B.speak(s)};
- function stop(){
+ function stop(abort=true){
+   // Al terminar de reconocer una frase, NO abortar la sesión: Android envía un
+   // evento "aborted" tardío que podría borrar una respuesta correcta.
    listening=false;button.classList.remove('mrr-recording');button.textContent='🎙 Hablar con MORRISON';
-   if(current){const old=current;current=null;try{old.onend=null;old.abort()}catch(_){}}
+   if(current){
+     const old=current;current=null;
+     old.onresult=null;old.onerror=null;old.onend=null;
+     if(abort){try{old.abort()}catch(_){}}
+   }
  }
  const norm=t=>String(t||'').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[¿?¡!.,:;]+/g,' ').replace(/\s+/g,' ').trim();
  const dateNow=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
@@ -58,8 +64,13 @@
    const data=B.getData();
    const tasks=Array.isArray(data.tasks)?data.tasks.filter(x=>!x.done):[];
    const projects=Array.isArray(data.projects)?data.projects:[];
-   if(/^(hola|buenos dias|buenas tardes|buenas noches|estas ahi)$/.test(t)){
-     answer('Aquí estoy. Puedes preguntarme por tus tareas, proyectos o pedirme que abra una sección.');inform('Consulta respondida en el dispositivo.');return;
+   if(/^(?:hola|holi|buenos dias|buenas tardes|buenas noches|hey|oye)(?:\s+(?:morrison|como estas|como estamos|como vamos|que tal|que haces|estas ahi))?$/.test(t)||/^(?:como estas|como estamos|como vamos|que tal|estas ahi|hola como estas|hola como estamos)$/.test(t)){
+     answer('¡Hola! Aquí estoy y listo para ayudarte. En este teléfono tienes '+tasks.length+' tarea'+(tasks.length===1?'':'s')+' pendiente'+(tasks.length===1?'':'s')+'. Puedes preguntarme por tus tareas, tus proyectos o pedirme que abra una sección.');
+     inform('Saludo respondido en el dispositivo.');return;
+   }
+   if(/^(?:que puedes hacer|que sabes hacer|ayuda|necesito ayuda|como funciona|que puedo preguntarte)$/.test(t)){
+     answer('Puedo revisar tus tareas y proyectos guardados, decirte la hora, crear una tarea si la confirmas y abrir secciones. Para preguntas generales tienes el acceso a ChatGPT.');
+     inform('Estas son mis funciones locales disponibles.');return;
    }
    if(/\b(que|cuantas?|mostrar|dime|listar|ver|tengo|pendientes|proximas)\b/.test(t)&&/\b(tareas|pendientes|agenda)\b/.test(t)){
      const today=/\b(hoy|dia)\b/.test(t);
@@ -99,10 +110,27 @@
    if(!Recognition){inform('Este navegador no admite reconocimiento de voz. Puedes escribir tu pregunta o usar ChatGPT en modo voz.','error');$('mrr-talk-text').focus();return}
    try{
      const r=new Recognition();current=r;r.lang='es-CL';r.continuous=false;r.interimResults=false;r.maxAlternatives=1;
-     r.onresult=e=>{const raw=e.results?.[0]?.[0]?.transcript||'';stop();if(raw){inform('Escuché: '+raw);execute(raw)}else{inform('No pude reconocer lo que dijiste. Prueba otra vez.','error')}};
-     r.onerror=e=>{const code=e?.error||'desconocido';stop();inform(code==='not-allowed'?'Micrófono sin permiso. Autoriza el acceso en el navegador.':('No pude escuchar: '+code+'. Puedes escribir la pregunta.'),'error')};
-     r.onend=()=>{if(listening){stop();inform('No se detectó una frase. Toca el micrófono para reintentar.')}};
-     r.start();listening=true;button.classList.add('mrr-recording');button.textContent='■ Detener escucha';inform('Escuchando… habla ahora. Solo usaré tu voz durante esta consulta.');
+     r.onresult=e=>{
+       const raw=e.results?.[0]?.[0]?.transcript||'';
+       stop(false);
+       if(raw){execute(raw);inform('Escuché: '+raw+'. Consulta procesada.');}
+       else{inform('No pude reconocer lo que dijiste. Prueba otra vez.','error')}
+     };
+     r.onerror=e=>{
+       if(current!==r)return;
+       const code=e?.error||'desconocido';
+       stop(false);
+       if(code==='aborted'){inform('Escucha detenida. Pulsa de nuevo el micrófono para hablar.');return}
+       const message=code==='not-allowed'||code==='service-not-allowed'
+         ?'Micrófono sin permiso. Autoriza el acceso en los ajustes del navegador.'
+         :code==='no-speech'?'No detecté tu voz. Acércate al teléfono y vuelve a pulsar el micrófono.'
+         :code==='network'?'No hay servicio de reconocimiento de voz. Revisa internet o escribe tu pregunta.'
+         :'No pude escuchar: '+code+'. También puedes escribir la pregunta.';
+       inform(message,'error');
+     };
+     r.onend=()=>{if(current===r){stop(false);inform('Escucha finalizada sin transcripción. Vuelve a intentarlo.')}};
+     listening=true;button.classList.add('mrr-recording');button.textContent='■ Detener escucha';inform('Escuchando… habla ahora. Solo usaré tu voz durante esta consulta.');
+     r.start();
    }catch(e){stop();inform('No se pudo iniciar el micrófono: '+String(e.message||e),'error')}
  };
  $('mrr-talk-copy').onclick=async()=>{
