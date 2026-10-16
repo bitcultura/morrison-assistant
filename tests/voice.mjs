@@ -55,7 +55,7 @@ try{
   await page.locator('#mrr-talk-text').fill('¿Qué tareas pendientes tengo?');
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/probar voz local/);
-  await page.locator('#mrr-talk-text').fill('Qué es una supernova');
+  await page.locator('#mrr-talk-text').fill('Redacta un cuento original para mí');
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/ChatGPT/);
   assert.equal(await page.locator('#mrr-talk-chatgpt').getAttribute('href'),'https://chatgpt.com/');
