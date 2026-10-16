@@ -23,10 +23,23 @@ try{
     Object.defineProperty(window,'webkitSpeechRecognition',{configurable:true,value:FakeRecognition});
   });
   await page.goto(origin+'/?v=test-'+Date.now()+'#inicio',{waitUntil:'networkidle'});
+  let encyclopediaCalls=0;
+  await page.route('https://es.wikipedia.org/w/api.php**',async route=>{
+    encyclopediaCalls++;
+    const request=new URL(route.request().url());
+    assert.match(request.searchParams.get('gsrsearch')||'',/supernova/i,'La consulta gratuita debe ser sobre un tema general');
+    await route.fulfill({status:200,contentType:'application/json',headers:{'Access-Control-Allow-Origin':'*'},body:JSON.stringify({
+      query:{pages:[{pageid:107,title:'Supernova',extract:'Una supernova es una explosión estelar que produce gran luminosidad.'}]}
+    })});
+  });
+
   const talk=page.locator('#mrr-talk');
   assert.ok(await talk.isVisible(),'Botón del micrófono debe verse desde Inicio');
   assert.ok((await talk.innerText()).includes('Hablar con MORRISON'));
   assert.ok(await page.locator('#mrr-talk-text').isVisible());
+  assert.ok(await page.locator('#mrr-talk-voice').isVisible(),'La voz elegible debe ser visible desde Inicio');
+  assert.match(await page.locator('#mrr-talk-test').innerText(),/Probar voz/);
+
   await page.locator('#mrr-talk-text').fill('Cuántos proyectos tengo');
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/proyectos guardados/i);
@@ -46,6 +59,17 @@ try{
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/ChatGPT/);
   assert.equal(await page.locator('#mrr-talk-chatgpt').getAttribute('href'),'https://chatgpt.com/');
+  await page.locator('#mrr-talk-text').fill('Qué es una supernova');
+  await page.locator('#mrr-talk-form button[type=submit]').click();
+  await page.waitForFunction(()=>document.querySelector('#mrr-talk-answer')?.textContent?.includes('Una supernova es una explosión estelar'));
+  assert.ok(await page.locator('#mrr-talk-source').isVisible(),'Enlace a Wikipedia debe estar visible');
+  assert.equal(await page.locator('#mrr-talk-source').getAttribute('href'),'https://es.wikipedia.org/?curid=107');
+  assert.equal(encyclopediaCalls,1,'Una sola llamada a Wikipedia sin datos locales');
+  await page.locator('#mrr-talk-text').fill('Qué es mi contraseña personal');
+  await page.locator('#mrr-talk-form button[type=submit]').click();
+  assert.equal(encyclopediaCalls,1,'No transmitir preguntas con datos sensibles al sitio enciclopédico');
+  assert.ok(await page.locator('#mrr-talk-source').isHidden(),'La fuente anterior se limpia al cambiar la pregunta');
+
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(overflow<4,'La portada no debe desbordarse horizontalmente en móvil: '+overflow);
   assert.deepEqual(errors,[],'Sin excepciones del navegador');
