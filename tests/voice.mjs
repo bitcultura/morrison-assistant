@@ -8,11 +8,13 @@ try{
   const page=await ctx.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
-    window.webkitSpeechRecognition=class{
+    class FakeRecognition{
       lang='';continuous=false;interimResults=false;maxAlternatives=1;
       start(){setTimeout(()=>this.onresult?.({results:[[{transcript:'Qué tareas pendientes tengo'}]]}),40)}
       abort(){}
-    };
+    }
+    Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:FakeRecognition});
+    Object.defineProperty(window,'webkitSpeechRecognition',{configurable:true,value:FakeRecognition});
   });
   await page.goto(origin+'/?v=test-'+Date.now()+'#inicio',{waitUntil:'networkidle'});
   const talk=page.locator('#mrr-talk');
@@ -27,7 +29,7 @@ try{
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.ok(await page.evaluate(()=>window.MORRISON_BRIDGE.getData().tasks.some(t=>t.name==='probar voz local')),'La tarea se agrega con aprobación explícita');
   await talk.click();
-  await page.waitForFunction(()=>document.querySelector('#mrr-talk-text')?.value==='Qué tareas pendientes tengo');
+  await page.waitForFunction(()=>document.querySelector('#mrr-talk-text')?.value==='Qué tareas pendientes tengo',null,{timeout:9000});
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/probar voz local/);
   await page.locator('#mrr-talk-text').fill('Qué es una supernova');
   await page.locator('#mrr-talk-form button[type=submit]').click();
