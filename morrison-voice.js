@@ -1,4 +1,4 @@
-/* MORRISON 1.4.1 — Corrección de diálogo y cancelación de micrófono.
+/* MORRISON 1.5 — Respuestas dentro de MORRISON, voces elegibles y fuentes gratuitas.
    Comandos y respuestas LOCALES; preguntas generales se entregan a ChatGPT por separado.
    No requiere credenciales ni API de pago. */
 (()=>{'use strict';
@@ -21,6 +21,11 @@
  .mrr-voice-feedback[data-kind=info]{color:#afd1e8}
  .mrr-voice-feedback[data-kind=error]{color:#ffb6bb}
  .mrr-voice-footer{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+ .mrr-voice-choice{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+ .mrr-voice-choice label{font-size:12px;color:#afd0df}
+ .mrr-voice-choice select{background:#061624;border:1px solid #325771;color:#f4fbff;border-radius:9px;padding:10px;min-width:0;max-width:100%;flex:1 1 185px}
+ .mrr-voice-source{display:block;color:#96c9f8;font-size:12px;margin-top:10px;text-decoration:underline;text-underline-offset:3px}
+ .mrr-voice-source[hidden]{display:none}
  @media(max-width:740px){#mrr-talk{width:100%;min-height:56px}.mrr-voice-card{padding:16px}.mrr-voice-controls .btn{width:100%}}
  `;
  document.head.append(css);
@@ -30,21 +35,86 @@
  home.prepend(button);
  const panel=document.createElement('div');panel.className='mrr-voice-card';panel.id='mrr-voice-card';
  panel.innerHTML=`<div class="mrr-voice-title">◉ Conversación rápida</div>
- <p class="mrr-voice-help">Toca el micrófono y habla sin decir «Morrison», o escribe una pregunta. Puedo consultar tus tareas y proyectos, abrir secciones y guardar tareas con confirmación.</p>
+ <p class="mrr-voice-help">Toca el micrófono y habla sin decir «Morrison». Puedo consultar tu agenda, abrir secciones y responder preguntas enciclopédicas con una fuente pública, sin abrir ChatGPT.</p>
+ <div class="mrr-voice-choice"><label for="mrr-talk-voice">Voz de MORRISON</label><select id="mrr-talk-voice" aria-label="Elegir voz de MORRISON"><option value="">Voz del dispositivo</option></select><button id="mrr-talk-test" type="button" class="btn secondary">▶ Probar voz</button></div>
  <form id="mrr-talk-form" class="mrr-voice-controls"><label for="mrr-talk-text" class="sr-only" style="position:absolute;left:-10000px">Pregunta o comando</label>
  <input id="mrr-talk-text" type="text" maxlength="300" placeholder="Ej.: ¿Qué tareas pendientes tengo?" autocomplete="off">
  <button type="submit" class="btn primary">Consultar</button></form>
  <p id="mrr-talk-status" class="mrr-voice-feedback" data-kind="info" role="status" aria-live="polite">Micrófono apagado. Solo escucha cuando pulsas el botón.</p>
  <p id="mrr-talk-answer" class="mrr-voice-feedback" data-kind="answer" aria-live="polite"></p>
+ <a id="mrr-talk-source" class="mrr-voice-source" href="https://es.wikipedia.org/" target="_blank" rel="noopener noreferrer" hidden>Ver fuente en Wikipedia ↗</a>
  <div class="mrr-voice-footer">
  <button id="mrr-talk-copy" type="button" class="btn secondary">Copiar pregunta</button>
- <a id="mrr-talk-chatgpt" class="btn secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">💬 Preguntas abiertas en ChatGPT ↗</a></div>
- <p class="mrr-voice-help">Puedo conversar sobre tareas y proyectos guardados. Para preguntas generales, abre ChatGPT y usa su micrófono. La IA todavía funciona en una aplicación separada.</p>`;
+ <a id="mrr-talk-chatgpt" class="btn secondary" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Consulta avanzada: ChatGPT externo ↗</a></div>
+ <p class="mrr-voice-help">Las preguntas enciclopédicas se envían a Wikipedia sin tus tareas ni notas personales. Esta función no es IA generativa ni informa noticias en tiempo real. Para consultas que requieran razonamiento, ChatGPT sigue siendo una aplicación aparte.</p>`;
  hero.insertAdjacentElement('afterend',panel);
  const $=id=>document.getElementById(id);
  let current=null,listening=false;
  const inform=(s,kind='info')=>{$('mrr-talk-status').textContent=s;$('mrr-talk-status').dataset.kind=kind};
- const answer=s=>{$('mrr-talk-answer').textContent=s;if(typeof B.speak==='function')B.speak(s)};
+ const src=$('mrr-talk-source');
+ function clearSource(){src.hidden=true;src.removeAttribute('data-page-id')}
+ function availableVoices(){return 'speechSynthesis' in window?speechSynthesis.getVoices().filter(v=>(v.lang||'').toLowerCase().startsWith('es')):[]}
+ function fillVoiceChoices(){
+   const select=$('mrr-talk-voice');const remembered=localStorage.getItem('mrr-voice-name')||'';
+   const available=availableVoices();select.textContent='';
+   const def=document.createElement('option');def.value='';def.textContent='Voz predeterminada Android';select.append(def);
+   for(const v of available){const opt=document.createElement('option');opt.value=v.name;opt.textContent=v.name+' ('+v.lang+')';select.append(opt)}
+   select.value=available.some(v=>v.name===remembered)?remembered:'';
+ }
+ if('speechSynthesis' in window){
+   fillVoiceChoices();speechSynthesis.addEventListener?.('voiceschanged',fillVoiceChoices);
+ }
+ $('mrr-talk-voice').onchange=()=>{
+   const value=$('mrr-talk-voice').value;
+   localStorage.setItem('mrr-voice-name',value);
+   const pick=$('mrr-voice-pick');if(pick&&Array.from(pick.options).some(x=>x.value===value))pick.value=value;
+   inform('Voz guardada solo en este dispositivo.');
+ };
+ function speakLocal(s){
+   if(!('speechSynthesis' in window))return;
+   try{
+     speechSynthesis.cancel();
+     const utterance=new SpeechSynthesisUtterance(String(s).slice(0,750));
+     const voice=availableVoices().find(v=>v.name===$('mrr-talk-voice').value);
+     utterance.voice=voice||null;utterance.lang=voice?.lang||'es-CL';
+     utterance.rate=.95;utterance.pitch=.86;
+     speechSynthesis.speak(utterance);
+   }catch(_){inform('La respuesta está disponible en texto, pero no pude reproducir audio.','error')}
+ }
+ $('mrr-talk-test').onclick=()=>speakLocal('Hola, soy MORRISON. Esta es mi voz. Puedes cambiarla desde el inicio.');
+ const answer=s=>{$('mrr-talk-answer').textContent=s;speakLocal(s)};
+ async function consultWikipedia(question,term){
+   clearSource();
+   const controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),9000);
+   inform('Consultando Wikipedia. Solo se envía esta pregunta general, no tus datos personales.');
+   try{
+     const url=new URL('https://es.wikipedia.org/w/api.php');
+     const params={action:'query',generator:'search',gsrsearch:term.slice(0,120),gsrlimit:'1',prop:'extracts',exintro:'1',explaintext:'1',exsentences:'3',format:'json',formatversion:'2',origin:'*'};
+     for(const [k,v] of Object.entries(params))url.searchParams.set(k,v);
+     const response=await fetch(url.href,{mode:'cors',signal:controller.signal,cache:'no-store'});
+     if(!response.ok)throw Error('HTTP '+response.status);
+     const result=await response.json();
+     const p=result?.query?.pages?.find(x=>typeof x.extract==='string'&&x.extract.trim());
+     if(!p){
+       answer('No encontré una respuesta enciclopédica verificable para esa pregunta.');
+       inform('Sin resultado. Puedes formular una pregunta más concreta.');return;
+     }
+     const extract=p.extract.replace(/\s+/g,' ').trim().slice(0,550);
+     const body=extract.length>420?extract.slice(0,420).replace(/\s+\S*$/,'')+'…':extract;
+     answer('Según Wikipedia, '+p.title+': '+body);
+     if(Number.isInteger(p.pageid)&&p.pageid>0){
+       src.href='https://es.wikipedia.org/?curid='+p.pageid;
+       src.textContent='Fuente: Wikipedia — '+p.title+' ↗';
+       src.hidden=false;
+     }
+     inform('Respuesta de una fuente enciclopédica, no de IA generativa.');
+   }catch(e){
+     $('mrr-talk-answer').textContent='No pude consultar Wikipedia ahora. Comprueba la conexión o usa la consulta avanzada externa.';
+     inform(e?.name==='AbortError'?'La consulta tardó demasiado. Prueba otra vez.':'La consulta pública no está disponible en este momento.','error');
+   }finally{clearTimeout(timer)}
+ }
+
  function stop(abort=true){
    // Al terminar de reconocer una frase, NO abortar la sesión: Android envía un
    // evento "aborted" tardío que podría borrar una respuesta correcta.
@@ -60,7 +130,8 @@
  function execute(raw){
    const text=String(raw||'').trim().slice(0,300);if(!text){inform('Escribe una consulta o toca el micrófono.','error');return}
    $('mrr-talk-text').value=text;
-   const t=norm(text).replace(/^(morrison|oye morrison)\s+/,'');
+   const t=norm(text).replace(/^(?:oye )?morrison(?:\s+|$)/,'');
+   clearSource();
    const data=B.getData();
    const tasks=Array.isArray(data.tasks)?data.tasks.filter(x=>!x.done):[];
    const projects=Array.isArray(data.projects)?data.projects:[];
@@ -100,8 +171,14 @@
      const dest=map[page[1]]||page[1];B.show(dest);
      answer('Abriendo '+page[1]+'.');inform('Sección abierta en MORRISON.');return;
    }
-   inform('Pregunta reconocida. MORRISON aún no puede razonar sobre temas generales en esta pantalla.');
-   $('mrr-talk-answer').textContent='Para responder esa pregunta con inteligencia artificial, pulsa «Copiar pregunta» y «Preguntas abiertas en ChatGPT». También puedes hablar en el modo de voz de ChatGPT.';
+   // No enviar información de agenda, notas, cuentas o proyectos a Wikipedia.
+   // Solo consultas explícitas de conocimiento general.
+   const match=t.match(/^(?:que es|que son|quien es|quien fue|quienes fueron|que significa|explicame|cuentame sobre|hablame de|que sabes de|que sabes sobre|cual es|donde esta|cuando fue|como funciona)\s+(.{3,130})$/);
+   if(match&&!/\b(mis|mi|nuestro|nuestra|correo|cuenta|contrasena|clave|token|password|telefono|contacto|privado|personal|agenda|tareas|notas|proyectos|morrison)\b/.test(t)){
+     consultWikipedia(text,match[1]);return;
+   }
+   inform('No tengo aún un motor de IA general integrado ni una fuente comprobable para esta consulta.');
+   $('mrr-talk-answer').textContent='Puedes preguntarme por tus tareas, proyectos y datos locales, o formular una pregunta como «¿Qué es una nebulosa?». Para razonamiento avanzado hay un enlace externo a ChatGPT.';
  }
  $('mrr-talk-form').onsubmit=e=>{e.preventDefault();stop();execute($('mrr-talk-text').value)};
  button.onclick=()=>{
@@ -113,7 +190,7 @@
      r.onresult=e=>{
        const raw=e.results?.[0]?.[0]?.transcript||'';
        stop(false);
-       if(raw){execute(raw);inform('Escuché: '+raw+'. Consulta procesada.');}
+       if(raw){execute(raw);inform('Escuché: '+raw+'. Consulta recibida.');}
        else{inform('No pude reconocer lo que dijiste. Prueba otra vez.','error')}
      };
      r.onerror=e=>{
