@@ -10,8 +10,14 @@ try{
   await page.addInitScript(()=>{
     class FakeRecognition{
       lang='';continuous=false;interimResults=false;maxAlternatives=1;
-      start(){setTimeout(()=>this.onresult?.({results:[[{transcript:'Qué tareas pendientes tengo'}]]}),40)}
-      abort(){}
+      start(){
+        setTimeout(()=>{
+          this.onresult?.({results:[[{transcript:'Hola cómo estamos'}]]});
+          // Algunos navegadores Android emiten "aborted" tarde cuando concluye.
+          setTimeout(()=>this.onerror?.({error:'aborted'}),15);
+        },40);
+      }
+      abort(){setTimeout(()=>this.onerror?.({error:'aborted'}),0)}
     }
     Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:FakeRecognition});
     Object.defineProperty(window,'webkitSpeechRecognition',{configurable:true,value:FakeRecognition});
@@ -29,7 +35,12 @@ try{
   await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.ok(await page.evaluate(()=>window.MORRISON_BRIDGE.getData().tasks.some(t=>t.name==='probar voz local')),'La tarea se agrega con aprobación explícita');
   await talk.click();
-  await page.waitForFunction(()=>document.querySelector('#mrr-talk-text')?.value==='Qué tareas pendientes tengo',null,{timeout:9000});
+  await page.waitForFunction(()=>document.querySelector('#mrr-talk-text')?.value==='Hola cómo estamos',null,{timeout:9000});
+  await page.waitForTimeout(150);
+  assert.match(await page.locator('#mrr-talk-answer').innerText(),/aquí estoy y listo/i);
+  assert.doesNotMatch(await page.locator('#mrr-talk-status').innerText(),/aborted|no pude escuchar/i,'No se debe mostrar aborted tras transcripción');
+  await page.locator('#mrr-talk-text').fill('¿Qué tareas pendientes tengo?');
+  await page.locator('#mrr-talk-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-talk-answer').innerText(),/probar voz local/);
   await page.locator('#mrr-talk-text').fill('Qué es una supernova');
   await page.locator('#mrr-talk-form button[type=submit]').click();
