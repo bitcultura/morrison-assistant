@@ -1,6 +1,6 @@
 /* MORRISON 1.2.1 — actualización en línea primero, sin borrar datos locales */
-const VERSION='morrison-v2.0.0-20261103';
-const STATIC=['./','./index.html','./morrison-ops.js?v=120','./morrison-connect.js?v=200','./morrison-voice.js?v=150','./morrison-agent.js?v=200','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const VERSION='morrison-v2.0.1-20261103';
+const STATIC=['./','./index.html','./morrison-ops.js?v=120','./morrison-connect.js?v=200','./morrison-voice.js?v=200','./morrison-agent.js?v=200','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(STATIC)).then(()=>self.skipWaiting()));
 });
