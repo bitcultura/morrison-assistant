@@ -63,7 +63,7 @@ function local(q){
  if(/^(lista|muestra|dime|que|cuantas|cuantos|mis).*(proyectos)/.test(n))return d.projects.length?'Proyectos:\n'+d.projects.slice(0,12).map(x=>'• '+x.name).join('\n'):'No hay proyectos.';
  if(/^(abre|muestra|ve a)\s+(la |el |mis )?(agenda|proyectos|notas|memoria|investigacion|automatizaciones|economia|ajustes|inicio)/.test(n)){const m=n.match(/(agenda|proyectos|notas|memoria|investigacion|automatizaciones|economia|ajustes|inicio)/)[1];B.show(m==='memoria'?'notas':m);return 'Abriendo '+m+'.'}
  const task=n.match(/^(crea|agrega|anade|registrar|registra)\s+(una )?tarea\s+(.{3,160})$/);
- if(task){const original=String(q).replace(/^(?:oye\\s+)?morrison[,\\s.:-]*/i,'').match(/^(?:crea|agrega|añade|anade|registrar|registra)\\s+(?:una\\s+)?tarea\\s+(.{3,160})$/i);const title=(original?.[1]||task[3]).trim();if(!confirm('¿Guardar tarea en este dispositivo?\\n'+title))return 'No se guardó la tarea.';return B.addTask(title)?'Tarea guardada: '+title+'.':'No pude guardarla.'}
+ if(task){const original=String(q).replace(/^(?:oye\s+)?morrison[,\s.:-]*/i,'').match(/^(?:crea|agrega|añade|anade|registrar|registra)\s+(?:una\s+)?tarea\s+(.{3,160})$/i);const title=(original?.[1]||task[3]).trim();if(!confirm('¿Guardar tarea en este dispositivo?\n'+title))return 'No se guardó la tarea.';return B.addTask(title)?'Tarea guardada: '+title+'.':'No pude guardarla.'}
  if(/^(hola|buenos dias|buenas tardes|buenas noches|como estas)$/.test(n))return 'Aquí estoy. Pídeme un resumen de pendientes o revisar proyectos.';
  return null;
 }
