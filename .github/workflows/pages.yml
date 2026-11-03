@@ -54,6 +54,7 @@ jobs:
           node tests/mobile.mjs
           node tests/voice.mjs
           node tests/sync.mjs
+          node tests/sync-bidirectional.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
