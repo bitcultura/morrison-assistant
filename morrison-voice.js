@@ -171,6 +171,13 @@
      const dest=map[page[1]]||page[1];B.show(dest);
      answer('Abriendo '+page[1]+'.');inform('Sección abierta en MORRISON.');return;
    }
+   // El nuevo agente puede resolver órdenes locales y, solo con consentimiento,
+   // consultas externas. El micrófono nunca queda abierto en segundo plano.
+   if(window.MORRISON_AGENT?.handleVoice?.(text,response=>{
+     $('mrr-talk-answer').textContent=response;
+     speakLocal(response);
+     inform('Respuesta conversacional dentro de MORRISON.');
+   })){inform('Consulta enviada al agente MORRISON.');return}
    // No enviar información de agenda, notas, cuentas o proyectos a Wikipedia.
    // Solo consultas explícitas de conocimiento general.
    const match=t.match(/^(?:que es|que son|quien es|quien fue|quienes fueron|que significa|explicame|cuentame sobre|hablame de|que sabes de|que sabes sobre|cual es|donde esta|cuando fue|como funciona)\s+(.{3,130})$/);
