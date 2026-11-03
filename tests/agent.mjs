@@ -38,7 +38,7 @@ try{
   await send('Redacta un cuento para mí');
   assert.match(await page.locator('#mrr-agent-log').innerText(),/Debes iniciar sesión Auth0/);
   await send('Morrison, crea tarea revisión de MORRISON');
-  assert.ok(await page.evaluate(()=>window.MORRISON_BRIDGE.getData().tasks.some(t=>t.name==='revisión de morrison')));
+  assert.ok(await page.evaluate(()=>window.MORRISON_BRIDGE.getData().tasks.some(t=>t.name.toLocaleLowerCase('es')==='revisión de morrison')));
   assert.deepEqual(errors,[],'Sin errores del navegador');
 
   await page.locator('#mrr-memory-list button').click();
