@@ -136,7 +136,14 @@
  }
  $('mrr-logout').onclick=()=>{access='';expires=0;keyMemory='';knownRevision=null;localSnapshot='';$('mrr-passphrase').value='';status('mrr-auth-status','Sesión local cerrada.');status('mrr-sync-status','Sincronización detenida.');};
  const authorized=()=>{if(!access||Date.now()>=expires){access='';throw Error('Inicia sesión Auth0 de nuevo');}return {Authorization:'Bearer '+access}};
- const payload=()=>({version:1,app:B.getData(),economy:JSON.parse(localStorage.getItem('morrison-v1-economia')||'null')});
+ window.MORRISON_CHAT_BRIDGE=Object.freeze({
+  ready:()=>!!access&&Date.now()<expires,
+  ask:async messages=>{
+   if(!Array.isArray(messages)||messages.length>8)throw Error('Solicitudes demasiado largas');
+   return getJSON(GATEWAY+'/morrison/v2/chat',{method:'POST',headers:{...authorized(),'Content-Type':'application/json'},body:JSON.stringify({messages})},17000);
+  }
+ });
+ const payload=()=>({version:1,app:B.getData(),economy:JSON.parse(localStorage.getItem('morrison-v1-economia')||'null'),memory:window.MORRISON_MEMORY_BRIDGE?.getBackup?.()||{version:1,items:[]}});
  const snapString=()=>JSON.stringify(payload());
  const b64=arr=>{let s='';for(const c of arr)s+=String.fromCharCode(c);return btoa(s)};
  const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -170,6 +177,7 @@
   if(data.economy&&data.economy.version===1&&Array.isArray(data.economy.entries)){
    if(!window.MORRISON_FINANCE_BRIDGE?.replaceData?.(data.economy))throw Error('El módulo de economía no aceptó el respaldo');
   }
+  if(data.memory&&window.MORRISON_MEMORY_BRIDGE&&!window.MORRISON_MEMORY_BRIDGE.replaceBackup(data.memory))throw Error('Memoria remota inválida');
   knownRevision=Number(revision)||0;localSnapshot=snapString();
  }
  async function receive(){
