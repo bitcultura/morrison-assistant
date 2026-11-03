@@ -23,6 +23,7 @@ jobs:
           node --check morrison-ops.js
           node --check morrison-connect.js
           node --check morrison-voice.js
+          node --check morrison-agent.js
           node --check sw.js
           python3 - <<'PY'
           import json,re,subprocess,pathlib
@@ -53,6 +54,7 @@ jobs:
           node tests/smoke.mjs
           node tests/mobile.mjs
           node tests/voice.mjs
+          node tests/agent.mjs
           node tests/sync.mjs
           node tests/sync-bidirectional.mjs
       - uses: actions/configure-pages@v5
