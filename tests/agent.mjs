@@ -18,6 +18,7 @@ try{
   assert.match(await page.locator('#mrr-agent-log').innerText(),/tareas pendientes.*proyectos/i);
   assert.match(await page.locator('#mrr-agent-status').innerText(),/sin enviar datos/i);
 
+  await page.locator('#mrr-agent details summary').click();
   await page.locator('#mrr-memory-text').fill('Prefiero respuestas breves');
   await page.locator('#mrr-memory-form button[type=submit]').click();
   assert.match(await page.locator('#mrr-memory-list').innerText(),/Prefiero respuestas breves/);
